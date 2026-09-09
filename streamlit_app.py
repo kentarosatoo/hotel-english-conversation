@@ -72,6 +72,22 @@ def get_wrong_questions():
 # --- UI構築 ---
 st.title("🏨 ホテル英会話マスター")
 
+# --- UIデザインの微調整（ブロックの隙間を狭くする） ---
+st.markdown("""
+<style>
+/* カラム（ブロックのコンテナ）間の左右の余白を最小化 */
+[data-testid="column"] {
+    padding-left: 0.2rem !important;
+    padding-right: 0.2rem !important;
+}
+/* ボタン（単語ブロック）自体の余白と高さを調整 */
+[data-testid="stButton"] button {
+    padding: 0.2rem 0.5rem !important;
+    min-height: 2.5rem !important;
+    margin-bottom: 0.2rem !important;
+}
+</style>
+""", unsafe_allow_html=True)
 mode = st.sidebar.radio("モードを選択してください", ["学習モード", "復習モード（間違えた問題）", "学習記録・弱点一覧"])
 
 # ---------------------------------
