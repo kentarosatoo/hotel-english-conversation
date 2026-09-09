@@ -75,10 +75,9 @@ st.title("🏨 ホテル英会話マスター")
 # --- UIデザインの微調整（ブロックの隙間を狭くする） ---
 st.markdown("""
 <style>
-/* カラム（ブロックのコンテナ）間の左右の余白を最小化 */
-[data-testid="column"] {
-    padding-left: 0.2rem !important;
-    padding-right: 0.2rem !important;
+/* 横並びのカラムの隙間を極限まで狭くする */
+div[data-testid="stHorizontalBlock"] {
+    gap: 0.2rem !important;
 }
 /* ボタン（単語ブロック）自体の余白と高さを調整 */
 [data-testid="stButton"] button {
@@ -88,6 +87,7 @@ st.markdown("""
 }
 </style>
 """, unsafe_allow_html=True)
+
 mode = st.sidebar.radio("モードを選択してください", ["学習モード", "復習モード（間違えた問題）", "学習記録・弱点一覧"])
 
 # ---------------------------------
@@ -119,11 +119,11 @@ if mode in ["学習モード", "復習モード（間違えた問題）"]:
         st.write("---")
 
         if not st.session_state.answered:
-            # 単語ブロックの表示（4列で折り返し表示）
-            cols = st.columns(4)
+            # 単語ブロックの表示（4列で折り返し表示、gap="small"で隙間を最小化）
+            cols = st.columns(4, gap="small")
             for i, block in enumerate(st.session_state.available_blocks):
-                # クリックされたら利用可能リストから削除し、選択済みリストへ追加
-                if cols[i % 4].button(block['word'], key=f"btn_{block['id']}"):
+                # use_container_width=True でボタンを枠いっぱいに広げる
+                if cols[i % 4].button(block['word'], key=f"btn_{block['id']}", use_container_width=True):
                     st.session_state.selected_blocks.append(block)
                     st.session_state.available_blocks.remove(block)
                     st.rerun()
