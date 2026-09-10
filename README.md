@@ -35,9 +35,13 @@ pip install streamlit pandas supabase requests
 questions.csv のフォーマット例:
 
  コード スニペット
+ 
  ja,en
+ 
  お荷物をお持ちしましょうか？,Shall I carry your baggage?
+ 
  こちらがルームキーになります。,Here is your room key.
+ 
  何泊ご滞在ですか？,How many nights will you be staying?
 
 ## 3. 環境変数（シークレット）の設定
