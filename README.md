@@ -1,4 +1,5 @@
-🏨 ホテル英会話マスター (Hotel English Conversation Master)
+###🏨 ホテル英会話マスター (Hotel English Conversation Master)
+
 Streamlitを利用した、ホテルの専門学校生向けの英会話学習Webアプリケーションです。
 フロントやレストランで頻出する接客フレーズを「単語の並び替え（整序問題）」形式で直感的に学び、外部APIによるネイティブ音声で発音も同時に確認することができます。
 
