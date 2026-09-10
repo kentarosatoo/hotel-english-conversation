@@ -52,7 +52,6 @@ if 'selected_blocks' not in st.session_state:
     st.session_state.selected_blocks = []
 if 'answered' not in st.session_state:
     st.session_state.answered = False
-# 音声プレイヤーを維持するために解答結果を記憶する変数を追加
 if 'is_correct' not in st.session_state:
     st.session_state.is_correct = False
 if 'user_sentence' not in st.session_state:
@@ -67,10 +66,10 @@ def set_new_question(q_list):
     words = q['en'].replace('?', '').replace('.', '').replace(',', '').split()
     shuffled = random.sample(words, len(words))
     
+    # ここで生成したブロックのリストは出題中ずっと保持します
     st.session_state.available_blocks = [{'id': i, 'word': w} for i, w in enumerate(shuffled)]
     st.session_state.selected_blocks = []
     
-    # 状態をリセット
     st.session_state.answered = False
     st.session_state.is_correct = False
     st.session_state.user_sentence = ""
@@ -143,21 +142,23 @@ if mode in ["学習モード", "復習モード（間違えた問題）"]:
         st.write("---")
 
         if not st.session_state.answered:
-            # 解答前の画面
             cols = st.columns(4, gap="small")
             for i, block in enumerate(st.session_state.available_blocks):
-                if cols[i % 4].button(block['word'], key=f"btn_{block['id']}", use_container_width=True):
+                # 🌟変更点：このブロックが既に選ばれているかチェック🌟
+                is_selected = block in st.session_state.selected_blocks
+                
+                # disabled=is_selected にすることで、選ばれたボタンは元の位置に残ったまま押せなくなる
+                if cols[i % 4].button(block['word'], key=f"btn_{block['id']}", use_container_width=True, disabled=is_selected):
                     st.session_state.selected_blocks.append(block)
-                    st.session_state.available_blocks.remove(block)
+                    # available_blocks から remove するのをやめました
                     st.rerun()
 
             st.write("")
             col1, col2 = st.columns(2)
             
             with col1:
+                # 🌟変更点：「やり直す」ときは選択済みリストを空にするだけ🌟
                 if st.button("🔄 選択をやり直す", use_container_width=True):
-                    st.session_state.available_blocks.extend(st.session_state.selected_blocks)
-                    st.session_state.available_blocks.sort(key=lambda x: x['id'])
                     st.session_state.selected_blocks = []
                     st.rerun()
                     
@@ -169,7 +170,6 @@ if mode in ["学習モード", "復習モード（間違えた問題）"]:
                     
                     is_correct = (correct_clean == user_clean)
                     
-                    # 結果をセッションステートに記憶させてから再描画
                     st.session_state.is_correct = is_correct
                     st.session_state.user_sentence = user_sentence
                     st.session_state.answered = True
@@ -178,7 +178,6 @@ if mode in ["学習モード", "復習モード（間違えた問題）"]:
                     st.rerun()
         
         else:
-            # 🌟 修正ポイント：解答後の待機画面にメッセージと音声プレイヤーを配置 🌟
             if st.session_state.is_correct:
                 st.success(f"正解！ 🎉\n\n正解文: **{q['en']}**")
             else:
