@@ -6,7 +6,7 @@ Streamlitを利用した、ホテルの専門学校生向けの英会話学習We
 # URL
 
 このURLで試すことができます（スリープ状態のときは青色の起動ボタンを押してください）：
-https://(あなたのアプリのURL).streamlit.app/
+https://blank-app-j0zdccmxhc.streamlit.app/
 
 # 🌟 主な機能
 
@@ -50,8 +50,8 @@ questions.csv のフォーマット例:
 ## 4. アプリの起動
 以下のコマンドでアプリを起動します。
 
-Bash
-streamlit run app.py
+Bash streamlit run app.py
+
 (※ファイル名が streamlit_app.py の場合は適宜読み替えてください)
 
 # 📊 データの仕組み
