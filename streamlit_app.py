@@ -21,7 +21,6 @@ def get_audio(text):
         url = "http://api.voicerss.org/"
         params = {"key": api_key, "hl": "en-us", "src": text, "c": "MP3", "f": "44khz_16bit_stereo"}
         response = requests.get(url, params=params)
-        # エラーテキストではなく、正常な音声データが返ってきた場合のみ再生
         if response.status_code == 200 and not response.content.startswith(b"ERROR"):
             return response.content
     except Exception as e:
@@ -53,6 +52,11 @@ if 'selected_blocks' not in st.session_state:
     st.session_state.selected_blocks = []
 if 'answered' not in st.session_state:
     st.session_state.answered = False
+# 音声プレイヤーを維持するために解答結果を記憶する変数を追加
+if 'is_correct' not in st.session_state:
+    st.session_state.is_correct = False
+if 'user_sentence' not in st.session_state:
+    st.session_state.user_sentence = ""
 
 def set_new_question(q_list):
     if not q_list:
@@ -65,7 +69,11 @@ def set_new_question(q_list):
     
     st.session_state.available_blocks = [{'id': i, 'word': w} for i, w in enumerate(shuffled)]
     st.session_state.selected_blocks = []
+    
+    # 状態をリセット
     st.session_state.answered = False
+    st.session_state.is_correct = False
+    st.session_state.user_sentence = ""
     return True
 
 # --- データベース操作関数（Supabase版） ---
@@ -135,6 +143,7 @@ if mode in ["学習モード", "復習モード（間違えた問題）"]:
         st.write("---")
 
         if not st.session_state.answered:
+            # 解答前の画面
             cols = st.columns(4, gap="small")
             for i, block in enumerate(st.session_state.available_blocks):
                 if cols[i % 4].button(block['word'], key=f"btn_{block['id']}", use_container_width=True):
@@ -160,22 +169,26 @@ if mode in ["学習モード", "復習モード（間違えた問題）"]:
                     
                     is_correct = (correct_clean == user_clean)
                     
-                    if is_correct:
-                        st.success(f"正解！ 🎉\n\n正解文: **{q['en']}**")
-                    else:
-                        st.error(f"惜しい！ 💦\n\n正解文: **{q['en']}**\n\nあなたの解答: {user_sentence}")
-                    
-                    # --- 音声再生 ---
-                    with st.spinner("音声を読み込み中..."):
-                        audio_bytes = get_audio(q['en'])
-                        if audio_bytes:
-                            st.audio(audio_bytes, format="audio/mp3")
+                    # 結果をセッションステートに記憶させてから再描画
+                    st.session_state.is_correct = is_correct
+                    st.session_state.user_sentence = user_sentence
+                    st.session_state.answered = True
                     
                     save_result(q['ja'], q['en'], user_sentence, is_correct)
-                    st.session_state.answered = True
                     st.rerun()
         
         else:
+            # 🌟 修正ポイント：解答後の待機画面にメッセージと音声プレイヤーを配置 🌟
+            if st.session_state.is_correct:
+                st.success(f"正解！ 🎉\n\n正解文: **{q['en']}**")
+            else:
+                st.error(f"惜しい！ 💦\n\n正解文: **{q['en']}**\n\nあなたの解答: {st.session_state.user_sentence}")
+            
+            with st.spinner("音声を読み込み中..."):
+                audio_bytes = get_audio(q['en'])
+                if audio_bytes:
+                    st.audio(audio_bytes, format="audio/mp3")
+
             if st.button("次の問題へ", type="primary"):
                 set_new_question(target_questions)
                 st.rerun()
