@@ -18,14 +18,28 @@ def init_db():
 
 conn = init_db()
 
-# --- 問題データ ---
-questions_data = [
-    {"ja": "お荷物をお持ちしましょうか？", "en": "Shall I carry your baggage?"},
-    {"ja": "こちらがルームキーになります。", "en": "Here is your room key."},
-    {"ja": "こちらの用紙にご記入いただけますか？", "en": "Could you fill out this form?"},
-    {"ja": "ご滞在はお楽しみいただけましたか？", "en": "Did you enjoy your stay?"},
-    {"ja": "朝食は6時半から9時半までご用意しております。", "en": "Breakfast is served from 6:30 to 9:30."}
-]
+# --- 🌟 CSVファイルから問題データを読み込む ---
+@st.cache_data
+def load_questions():
+    try:
+        # CSVファイルを読み込み
+        df = pd.read_csv('questions.csv', encoding='utf-8')
+        
+        # 列名が「日本文」「英文」の場合、プログラム用に「ja」「en」に変更
+        df = df.rename(columns={'日本文': 'ja', '英文': 'en'})
+        
+        # 辞書のリスト形式に変換して返す
+        return df.to_dict('records')
+        
+    except FileNotFoundError:
+        st.error("⚠️ questions.csv が見つかりません。GitHubの同じフォルダにアップロードされているか確認してください。")
+        return []
+    except Exception as e:
+         st.error(f"問題の読み込みエラー: {e}")
+         return []
+
+# 関数を実行して100問のデータを取得
+questions_data = load_questions()
 
 # --- セッションステートの管理 ---
 if 'current_q' not in st.session_state:
@@ -44,10 +58,10 @@ def set_new_question(q_list):
     st.session_state.current_q = q
     
     # 記号を除去して分割し、シャッフル
-    words = q['en'].replace('?', '').replace('.', '').split()
+    words = q['en'].replace('?', '').replace('.', '').replace(',', '').split()
     shuffled = random.sample(words, len(words))
     
-    # Streamlitのボタンキー重複エラーを防ぐため、各単語に一意のIDを付与
+    # 各単語に一意のIDを付与
     st.session_state.available_blocks = [{'id': i, 'word': w} for i, w in enumerate(shuffled)]
     st.session_state.selected_blocks = []
     st.session_state.answered = False
@@ -72,14 +86,12 @@ def get_wrong_questions():
 # --- UI構築 ---
 st.title("🏨 ホテル英会話マスター")
 
-# --- UIデザインの微調整（ブロックの隙間を狭くする） ---
+# --- UIデザインの微調整 ---
 st.markdown("""
 <style>
-/* 横並びのカラムの隙間を極限まで狭くする */
 div[data-testid="stHorizontalBlock"] {
     gap: 0.2rem !important;
 }
-/* ボタン（単語ブロック）自体の余白と高さを調整 */
 [data-testid="stButton"] button {
     padding: 0.2rem 0.5rem !important;
     min-height: 2.5rem !important;
@@ -108,7 +120,6 @@ if mode in ["学習モード", "復習モード（間違えた問題）"]:
         st.write("### お客様への声かけ:")
         st.write(f"**{q['ja']}**")
         
-        # 組み立て中の解答を表示
         st.write("▼ あなたの解答")
         selected_text = " ".join([b['word'] for b in st.session_state.selected_blocks])
         if selected_text:
@@ -119,10 +130,8 @@ if mode in ["学習モード", "復習モード（間違えた問題）"]:
         st.write("---")
 
         if not st.session_state.answered:
-            # 単語ブロックの表示（4列で折り返し表示、gap="small"で隙間を最小化）
             cols = st.columns(4, gap="small")
             for i, block in enumerate(st.session_state.available_blocks):
-                # use_container_width=True でボタンを枠いっぱいに広げる
                 if cols[i % 4].button(block['word'], key=f"btn_{block['id']}", use_container_width=True):
                     st.session_state.selected_blocks.append(block)
                     st.session_state.available_blocks.remove(block)
@@ -132,19 +141,17 @@ if mode in ["学習モード", "復習モード（間違えた問題）"]:
             col1, col2 = st.columns(2)
             
             with col1:
-                # 選択をリセットするボタン
                 if st.button("🔄 選択をやり直す", use_container_width=True):
-                    # 選択済みブロックを利用可能ブロックに戻してID順（元のシャッフル順）に並び替え
                     st.session_state.available_blocks.extend(st.session_state.selected_blocks)
                     st.session_state.available_blocks.sort(key=lambda x: x['id'])
                     st.session_state.selected_blocks = []
                     st.rerun()
                     
             with col2:
-                # 解答ボタン
                 if st.button("✅ 解答する", type="primary", use_container_width=True):
                     user_sentence = " ".join([b['word'] for b in st.session_state.selected_blocks])
-                    correct_clean = q['en'].replace('?', '').replace('.', '').lower()
+                    # カンマなどの記号を除去して判定を柔軟にする
+                    correct_clean = q['en'].replace('?', '').replace('.', '').replace(',', '').lower()
                     user_clean = user_sentence.lower()
                     
                     is_correct = (correct_clean == user_clean)
@@ -158,7 +165,6 @@ if mode in ["学習モード", "復習モード（間違えた問題）"]:
                     st.session_state.answered = True
                     st.rerun()
         
-        # 解答後の画面
         else:
             if st.button("次の問題へ", type="primary"):
                 set_new_question(target_questions)
