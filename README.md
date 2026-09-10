@@ -25,8 +25,9 @@ CSVによる問題管理: プログラムを直接編集せずとも、questions
 ## 1. 依存ライブラリのインストール
 Python環境がインストールされていることを確認し、必要なライブラリをインストールしてください。
 
-Bash
+```bash
 pip install streamlit pandas supabase requests
+```
 
 ## 2. 単語データの準備
 プロジェクトのルートディレクトリに questions.csv という名前でCSVファイルを配置してください。アプリ起動時に自動的に読み込まれます。
@@ -50,7 +51,9 @@ questions.csv のフォーマット例:
 ## 4. アプリの起動
 以下のコマンドでアプリを起動します。
 
-Bash streamlit run app.py
+```bash
+streamlit run app.py
+```
 
 (※ファイル名が streamlit_app.py の場合は適宜読み替えてください)
 
