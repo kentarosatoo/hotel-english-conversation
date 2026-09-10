@@ -1,6 +1,7 @@
 import streamlit as st
 import random
 import pandas as pd
+import requests
 from supabase import create_client, Client
 
 # --- 🌟 Supabaseの初期化 ---
@@ -28,6 +29,20 @@ def load_questions():
 
 questions_data = load_questions()
 
+# --- 音声APIの関数を追加---
+@st.cache_data(show_spinner=False)
+def get_audio(text):
+    api_key = st.secrets["VOICERSS_API_KEY"]
+    url = "http://api.voicerss.org/"
+    params = {"key": api_key, "hl": "en-us", "src": text, "c": "MP3", "f": "44khz_16bit_stereo"}
+    try:
+        response = requests.get(url, params=params)
+        if response.status_code == 200 and not response.content.startswith(b"ERROR"):
+            return response.content
+    except:
+        pass
+    return None
+
 # --- セッションステートの管理 ---
 if 'current_q' not in st.session_state:
     st.session_state.current_q = None
@@ -51,6 +66,18 @@ def set_new_question(q_list):
     st.session_state.selected_blocks = []
     st.session_state.answered = False
     return True
+
+# --- 解答ボタンの処理の中に追加 ---
+                    if is_correct:
+                        st.success(f"正解！ 🎉\n\n正解文: **{q['en']}**")
+                    else:
+                        st.error(f"惜しい！ 💦\n\n正解文: **{q['en']}**\n\nあなたの解答: {user_sentence}")
+                    
+                    # 🌟 ここに音声再生を追加 🌟
+                    with st.spinner("音声を読み込み中..."):
+                        audio_bytes = get_audio(q['en'])
+                        if audio_bytes:
+                            st.audio(audio_bytes, format="audio/mp3")
 
 # --- 🌟 データベース操作関数（Supabase版） ---
 def save_result(ja, correct, user, is_correct):
