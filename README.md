@@ -44,8 +44,11 @@ questions.csv のフォーマット例:
 データベースとAPIを使用するため、Streamlit Community Cloudの Secrets（ローカル環境の場合は .streamlit/secrets.toml）に以下の情報を設定してください。
 
  Ini, TOML
+ 
  SUPABASE_URL = "https://krcxvzytnkxoyxzikevo.supabase.co"
+ 
  SUPABASE_KEY = "sb_publishable_WLEpaFXdeeVZpssb8K8oxA_1HU1YWP6"
+ 
  VOICERSS_API_KEY = "8df9a1eca95f42c3a9d43b54b6ecdace"
 
 ## 4. アプリの起動
