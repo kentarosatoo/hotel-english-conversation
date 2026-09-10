@@ -4,7 +4,7 @@ import pandas as pd
 import requests
 from supabase import create_client, Client
 
-# --- 🌟 Supabaseの初期化 ---
+# --- Supabaseの初期化 ---
 @st.cache_resource
 def init_supabase():
     url = st.secrets["SUPABASE_URL"]
@@ -12,6 +12,21 @@ def init_supabase():
     return create_client(url, key)
 
 supabase = init_supabase()
+
+# --- 音声API (VoiceRSS) の設定 ---
+@st.cache_data(show_spinner=False)
+def get_audio(text):
+    try:
+        api_key = st.secrets["VOICERSS_API_KEY"]
+        url = "http://api.voicerss.org/"
+        params = {"key": api_key, "hl": "en-us", "src": text, "c": "MP3", "f": "44khz_16bit_stereo"}
+        response = requests.get(url, params=params)
+        # エラーテキストではなく、正常な音声データが返ってきた場合のみ再生
+        if response.status_code == 200 and not response.content.startswith(b"ERROR"):
+            return response.content
+    except Exception as e:
+        pass
+    return None
 
 # --- CSVファイルから問題データを読み込む ---
 @st.cache_data
@@ -28,20 +43,6 @@ def load_questions():
          return []
 
 questions_data = load_questions()
-
-# --- 音声APIの関数を追加---
-@st.cache_data(show_spinner=False)
-def get_audio(text):
-    api_key = st.secrets["VOICERSS_API_KEY"]
-    url = "http://api.voicerss.org/"
-    params = {"key": api_key, "hl": "en-us", "src": text, "c": "MP3", "f": "44khz_16bit_stereo"}
-    try:
-        response = requests.get(url, params=params)
-        if response.status_code == 200 and not response.content.startswith(b"ERROR"):
-            return response.content
-    except:
-        pass
-    return None
 
 # --- セッションステートの管理 ---
 if 'current_q' not in st.session_state:
@@ -67,19 +68,7 @@ def set_new_question(q_list):
     st.session_state.answered = False
     return True
 
-# --- 解答ボタンの処理の中に追加 ---
-                    if is_correct:
-                        st.success(f"正解！ 🎉\n\n正解文: **{q['en']}**")
-                    else:
-                        st.error(f"惜しい！ 💦\n\n正解文: **{q['en']}**\n\nあなたの解答: {user_sentence}")
-                    
-                    # 🌟 ここに音声再生を追加 🌟
-                    with st.spinner("音声を読み込み中..."):
-                        audio_bytes = get_audio(q['en'])
-                        if audio_bytes:
-                            st.audio(audio_bytes, format="audio/mp3")
-
-# --- 🌟 データベース操作関数（Supabase版） ---
+# --- データベース操作関数（Supabase版） ---
 def save_result(ja, correct, user, is_correct):
     try:
         supabase.table("history").insert({
@@ -93,7 +82,6 @@ def save_result(ja, correct, user, is_correct):
 
 def get_wrong_questions():
     try:
-        # is_correct が False のデータだけを取得
         response = supabase.table("history").select("japanese, correct_answer").eq("is_correct", False).execute()
         df = pd.DataFrame(response.data)
         
@@ -177,6 +165,12 @@ if mode in ["学習モード", "復習モード（間違えた問題）"]:
                     else:
                         st.error(f"惜しい！ 💦\n\n正解文: **{q['en']}**\n\nあなたの解答: {user_sentence}")
                     
+                    # --- 音声再生 ---
+                    with st.spinner("音声を読み込み中..."):
+                        audio_bytes = get_audio(q['en'])
+                        if audio_bytes:
+                            st.audio(audio_bytes, format="audio/mp3")
+                    
                     save_result(q['ja'], q['en'], user_sentence, is_correct)
                     st.session_state.answered = True
                     st.rerun()
@@ -193,14 +187,12 @@ elif mode == "学習記録・弱点一覧":
     st.subheader("これまでの学習記録")
     
     try:
-        # Supabaseから全履歴を取得（新しい順）
         response = supabase.table("history").select("id, japanese, correct_answer, user_answer, is_correct").order("id", desc=True).execute()
         df = pd.DataFrame(response.data)
         
         if df.empty:
             st.write("まだ学習記録がありません。")
         else:
-            # カラム名を日本語に変換
             df = df.rename(columns={'japanese': '日本語', 'correct_answer': '正解', 'user_answer': 'あなたの解答', 'is_correct': '判定'})
             df['判定'] = df['判定'].apply(lambda x: "⭕️" if x else "❌")
             
