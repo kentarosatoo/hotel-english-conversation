@@ -1,4 +1,4 @@
-# 🎈 Blank app template
+# 🎈 ホテル英会話マスター
 
 A simple Streamlit app template for you to modify!
 
